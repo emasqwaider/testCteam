@@ -567,5 +567,14 @@ public class CarController : MonoBehaviour
         BRWMesh.transform.position = RRWPosition;
         BRWMesh.transform.rotation = RRWRotation;
     }
+    public void Boost(float buff)
+    {
+        Debug.Log("ability");
+        carSpeed = carSpeed * buff;
+    }
+    public void ResetBoost(float buff)
+    {
+        carSpeed = carSpeed / buff;
+    }
 }
     
