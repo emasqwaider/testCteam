@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Runtime.ConstrainedExecution;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -7,13 +8,15 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-     float upsideDownTimer = 0f;
-     bool isUpsideDown = false;
+     float upsideDownTimer = 0f; //timer to check how long the car has been upside down.
+     bool isUpsideDown = false;//A flag to determine if the car is upside down.
     public bool IsAi;
     public bool player1;
     public bool player2;
+    // Flags to identify whether the car is controlled by AI or players.
     //[SerializeField] FileReadWriteDataSaver data;
-    [Header("Wheels")]
+    
+        [Header("Wheels")]
     [SerializeField]  WheelCollider FLW;
     [SerializeField] WheelCollider FRW;
     [SerializeField] WheelCollider BLW;
@@ -22,6 +25,8 @@ public class CarController : MonoBehaviour
     [SerializeField] GameObject FRWMesh;
     [SerializeField] GameObject BRWMesh;
     [SerializeField] GameObject BLWMesh;
+    //WheelCollider: Unity component for simulating wheel physics
+    //G References to the visual representation of the wheels
 
     [Header("Control Values")]
     [SerializeField] int     maxSpeed;
@@ -32,17 +37,18 @@ public class CarController : MonoBehaviour
     [SerializeField] int     brakeForce;
     [SerializeField] int     declerationMultiplier;
     [SerializeField] float handBrakeForDriftMultiplier;
-
+    //car speed steering braking acceleration hand break 
     [Header("Wheels Physics")]
     WheelFrictionCurve FLWFriction;
     WheelFrictionCurve FRWFriction;
     WheelFrictionCurve RLWFriction;
     WheelFrictionCurve RRWFriction;
-
+    //wheel friction 
     float FLWextremumSlip;
     float FRWextremumSlip;
     float RLWextremumSlip;
     float RRWextremumSlip;
+    //wheel slip 
 
     [Header("Inner Physics")]
     public Rigidbody carRigidbody; 
@@ -52,21 +58,22 @@ public class CarController : MonoBehaviour
     float     zVelocity;
     public float     XVelocity;
     bool      isdeceleratingCar;
-
     public float carSpeed;
     public bool isDrifting;
     public bool isTractionLocked;
+    //car state 
+
 
     [Header("Particals System")]
-    CarParticalsSystem carParticalsSystem;
+    CarParticalsSystem carParticalsSystem;//visual effects
 
     public bool Player1 { get => player1; set => player1 = value; }
     public bool Player2 { get => player2; set => player2 = value; }
 
-    void Start()
+    void Start()//Initialization code
     {
-      
-       
+
+
         carParticalsSystem = GetComponent<CarParticalsSystem>();
         /////////////////////////////////////////////////////////
         FLWFriction = new WheelFrictionCurve();
@@ -101,14 +108,10 @@ public class CarController : MonoBehaviour
         carRigidbody = GetComponent<Rigidbody>();
     }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void Update()
     {
-
-      
-
-
-
         UpdateWheelMesh();
 
         carSpeed = (2 * Mathf.PI * FRW.radius * FRW.rpm * 60) / 1000;
@@ -133,7 +136,7 @@ public class CarController : MonoBehaviour
                 if (Input.GetKey(KeyCode.W) && Input.GetKey(KeyCode.S))
                 {
                     ForwardSlip();
-                    carParticalsSystem.ApplyParticals(true);
+                    carParticalsSystem.ApplyParticals(true);//smoke animation
                 }
                 if (Input.GetKey(KeyCode.A))
                 {
@@ -146,16 +149,18 @@ public class CarController : MonoBehaviour
                 if (Input.GetKey(KeyCode.Space))
                 {
                     HandBrake();
+                    
                 }
-                if (Input.GetKeyUp(KeyCode.Space))
+                if (Input.GetKey(KeyCode.Space))
                 {
+                    
                     ApplyTraction();
                 }
                 if (!Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.W))
                 {
                     StopCar();
                 }
-                if (!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
+                if (!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))//forward steer 
                 {
                     ResetSteeringAngle();
                 }
@@ -170,7 +175,6 @@ public class CarController : MonoBehaviour
                 if (Input.GetKey(KeyCode.DownArrow))
                 {
                     Revers();
-
                 }
                 if (Input.GetKeyUp(KeyCode.DownArrow))
                 {
@@ -193,9 +197,11 @@ public class CarController : MonoBehaviour
                 if (Input.GetKey(KeyCode.P))
                 {
                     HandBrake();
+                    
                 }
-                if (Input.GetKeyUp(KeyCode.P))
+                if (Input.GetKey(KeyCode.P))
                 {
+                    
                     ApplyTraction();
                 }
                 if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow))
@@ -210,12 +216,13 @@ public class CarController : MonoBehaviour
 
         }
 
-
         XVelocity = transform.InverseTransformDirection(carRigidbody.velocity).x;
         zVelocity = transform.InverseTransformDirection(carRigidbody.velocity).z;
 
-        CheckUpsideDown();
+        CheckUpsideDown();//check the z axis for the car to reposition it
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     private void CheckUpsideDown()
     {
@@ -248,31 +255,33 @@ public class CarController : MonoBehaviour
         }
     }
 
-    public void SetSteeringInput(float input)
+    public void SetSteeringInput(float input)//Set steering input for the car
     {
         
         FRW.steerAngle = Mathf.Lerp(FRW.steerAngle, input, steeringSpeed);
         FLW.steerAngle = Mathf.Lerp(FRW.steerAngle, input, steeringSpeed);
     }
 
-    private void ResetSteeringAngle()
+    private void ResetSteeringAngle()//straight wheels 
     {
-        //TODO Dear me for third time plz finish this function using lerp :)
         FRW.steerAngle = 0f;
         FLW.steerAngle = 0f;
     }
     public void Right()
-    {
+    { 
+        // increases the steering input (steerAxis) over time,
+        // clamps it to a maximum value of 1, and smoothly adjusts the steering angles
+        // of the front wheels to make the car turn to the right. 
         
             steerAxis = steerAxis + (Time.deltaTime * steeringSpeed);
             if (steerAxis > 1)
             {
                 steerAxis = 1;
             }
-            FRW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);
-            FLW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);
-       
-        
+            FRW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);//to make it turn smoothly 
+            FLW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);//to make it turn smoothly 
+
+
 
     }
     public void Left()
@@ -283,13 +292,13 @@ public class CarController : MonoBehaviour
             steerAxis = -1;
         }
 
-        FRW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);
-        FLW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);
+        FRW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);//to make it turn smoothly 
+        FLW.steerAngle = Mathf.Lerp(FRW.steerAngle, steerAxis * maxSpeedAngle, steeringSpeed);//to make it turn smoothly 
 
     }
     public void Forward()
     {
-        if (Mathf.Abs(XVelocity) > 2.5)
+        if (Mathf.Abs(XVelocity) > 2.5)//check the angle between x-axis and car to see if the car is turn right or left to make it drifting
         {
             isDrifting = true;
             carParticalsSystem.ApplyParticals();
@@ -306,9 +315,8 @@ public class CarController : MonoBehaviour
             throttAxis = 1f;
 
         }
-        if (zVelocity < -1)
+        if (zVelocity < -1)//Checks if the car is moving backward 
         {
-            
             BreakHold();
         }
         else
@@ -351,7 +359,7 @@ public class CarController : MonoBehaviour
         else
         if (carSpeed < maxSpeed)
         {
-            FLW.brakeTorque = 1000;
+            FLW.brakeTorque = 1000;//break force
             FRW.brakeTorque = 1000;
             BLW.brakeTorque = 0;
             BRW.brakeTorque = 0;
@@ -421,7 +429,7 @@ public class CarController : MonoBehaviour
         BLW.brakeTorque = brakeForce;
         BRW.brakeTorque = brakeForce;
     }
-    private void StopThrottle()
+    private void StopThrottle()//stop the car immediatly 
     {
         FLW.motorTorque = 0;
         FRW.motorTorque = 0;
@@ -567,14 +575,17 @@ public class CarController : MonoBehaviour
         BRWMesh.transform.position = RRWPosition;
         BRWMesh.transform.rotation = RRWRotation;
     }
+    private int lastspeed;
     public void Boost(float buff)
     {
+        lastspeed = maxSpeed;
+        maxSpeed = 150;carSpeed = 130;
         Debug.Log("ability");
-        carSpeed = carSpeed * buff;
+        carSpeed = carSpeed * buff + 100;
     }
     public void ResetBoost(float buff)
     {
-        carSpeed = carSpeed / buff;
+        maxSpeed = lastspeed;
+        carSpeed = carSpeed / buff - 100;
     }
 }
-    
